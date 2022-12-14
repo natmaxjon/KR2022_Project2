@@ -328,6 +328,13 @@ class BNReasoner:
         in the Bayesian network X with Q ⊂ X but can also be Q = X. 
         """
 
+   def marginal_distribution_brutto(self, Q: Set[str], e: pd.Series) -> pd.DataFrame:
+        """
+        Given query variables Q and possibly empty evidence e, compute the marginal distribution P(Q|e). 
+        Note that Q is a subset of the variables 
+        in the Bayesian network X with Q ⊂ X but can also be Q = X. 
+        """
+
         cpts = self.bn.get_all_cpts()
 
         # reduce all factors w.r.t. e
@@ -336,32 +343,33 @@ class BNReasoner:
             upd_cpt = self.bn.get_compatible_instantiations_table(e, cpt)
             upd_cpts[var] = upd_cpt
 
-        # get joint probability Q and e - P(Q, e)
-        p_Q_e = pd.DataFrame()
-        visited = []
-        for var in self.bn.get_all_variables():
-            for child in self.bn.get_children(var):
-                if child not in visited:
-                    if p_Q_e.size == 0:
-                        p_Q_e = self.factor_multiplication(upd_cpts[var], upd_cpts[child])
-                        visited.extend([var, child])
-                    else:
-                        p_Q_e = self.factor_multiplication(p_Q_e, upd_cpts[child])
-                        visited.append(child)
+        # calculate probability of Q and e
+        p_Q_and_e = None
+        for var in upd_cpts:
+            if p_Q_and_e is None:
+                p_Q_and_e = upd_cpts[var]
+            else:
+                p_Q_and_e = self.factor_multiplication(p_Q_and_e, upd_cpts[var])
 
-        # get all the variables that are not in Q or e and sum-out them
+        # variables not in Q and e
         X = set(self.bn.get_all_variables()) - Q - set(e.keys())
-        for var in X:
-            p_Q_e = self.marginalization(var, p_Q_e)
+        order = self.elimination_order(X, heuristic='min_deg')
+        for node in order:
+            p_Q_and_e = self.marginalization(node, p_Q_and_e)
 
         # compute probability of e
-        p_e = p_Q_e.copy()
+        p_e = p_Q_and_e.copy()
         for var in Q:
-            p_e = bayes.marginalization(var, p_e)
+            p_e = self.marginalization(var, p_e)
         p_e = p_e['p'][0]
 
         # divide joint probability on probability of evidence
-        p_Q_e['p'] = p_Q_e['p'].apply(lambda x: x/p_e['p'][0])
+        p_Q_e = p_Q_and_e.drop(axis=1, labels=list(e.index))
+        
+        # normalise probabilities
+        p_Q_e['p'] = p_Q_e['p'].apply(lambda x: x/p_e)
+
+        return p_Q_e
 
         return p_Q_e 
     
