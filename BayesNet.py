@@ -309,7 +309,7 @@ class BayesNet:
             e_vars = random.sample(remaining_nodes, num_e)
         else: # e first
             e_vars = random.sample(nodes, num_e)
-            remaining_nodes = list(set(nodes) - set(e))
+            remaining_nodes = list(set(nodes) - set(e_vars))
             Q = random.sample(remaining_nodes, num_Q)
 
         # Randomly assign truth values to variables in e
