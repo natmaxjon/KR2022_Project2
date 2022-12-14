@@ -366,13 +366,12 @@ class BNReasoner:
 
         # divide joint probability on probability of evidence
         p_Q_e = p_Q_and_e.drop(axis=1, labels=list(e.index))
-        
+
         # normalise probabilities
         p_Q_e['p'] = p_Q_e['p'].apply(lambda x: x/p_e)
 
         return p_Q_e
 
-        return p_Q_e 
     
     def MAP(self, Q:Set[str], e:pd.Series):
         """
