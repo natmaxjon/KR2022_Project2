@@ -281,7 +281,7 @@ class BNReasoner:
             upd_cpts[var] = upd_cpt
 
         # get all the variables that are not in Q or e
-        X = set(self.bn.get_all_variables()) - Q - set(e.keys())
+        X = set(self.bn.get_all_variables()) - set(Q) - set(e.keys())
 
         # get order of variables summation
         order = self.elimination_order(X, heuristic=heuristic)
@@ -350,7 +350,7 @@ class BNReasoner:
                         visited.append(child)
 
         # get all the variables that are not in Q or e and sum-out them
-        X = set(self.bn.get_all_variables()) - Q - set(e.keys())
+        X = set(self.bn.get_all_variables()) - set(Q) - set(e.keys())
         for var in X:
             p_Q_e = self.marginalization(var, p_Q_e)
 
@@ -371,10 +371,16 @@ class BNReasoner:
         given some (possible empty) evidence
         """
         cpt = self.marginal_distribution(Q, e)
-        max = cpt["p"].max()
-        map = cpt.loc[cpt['p'] == max]
+        print(cpt)
+        print("max out:", Q[0])
+        cpt = self.maxing_out(Q[0], cpt)
+        # for var in Q:
+        #     cpt = self.maxing_out(var, cpt)
 
-        return map
+        # max = cpt["p"].max()
+        # map = cpt.loc[cpt['p'] == max]
+
+        return cpt
 
     def MPE(self, Q, e):
         """
