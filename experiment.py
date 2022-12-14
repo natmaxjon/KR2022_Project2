@@ -1,17 +1,20 @@
 import argparse
 from collections import defaultdict
+import os
+import pathlib
 from time import time
 
+import pandas as pd
+from tqdm import tqdm
+
 from BNReasoner import BNReasoner
-from gen_test_set import gen_bns
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", help="path to input folder", type=str)
-    parser.add_argument("--output", help="path to output folder", type=str)
-    parser.add_argument("--max_size", help="maximum size for the BN", default=10, type=int)
-    parser.add_argument("--iter", help="maximum amount of iterations", default=5, type=int)
+    parser.add_argument("--input", help="path to input folder", type=str, default='testing/test_set1/')
+    parser.add_argument("--output", help="path to output folder", type=str, default='results.xlsx')
+    # parser.add_argument("--iter", help="maximum amount of iterations", default=5, type=int)
     parser.add_argument("--heuristics", help="heuristic to use in ordering", default='min_deg', type=str)
     args = parser.parse_args()
 
@@ -21,34 +24,47 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    stats = {}
-
+    stats = []
     # iterate over files, not sizes
-    for size in range(args.max_size):
-        stats['bare_net'] = defaultdict(list)
-        stats['prunned_net'] = defaultdict(list)
+    for size_folder in tqdm(os.listdir(args.input)):
+        for net_file in os.listdir(f'{args.input}{size_folder}'):
+            net_path = f'{args.input}{size_folder}/{net_file}'
+            print(f'Processing {net_path} file.')
+            bayes_net = BNReasoner(net_path)
 
-        gen_bns(size)
-        bayes_net = BNReasoner(args.input)
-        # query = generate_query()
-        query = None
-        for iter in range(args.iter):
+
+            # collect stats about prunned nodes and edges
+            # motivation: we leave Q and e the same for prunned network
+            node_amt = bayes_net.bn.get_num_nodes()
+            edges_amt = bayes_net.bn.get_num_edges()
+            
+            Q, e = bayes_net.bn.rand_Qe(q_ratio=0.3, e_ratio=0.2) # q_ratio = 30%, e_ratio = 20% [smaller precentage -> more prunning]
+
             start_time = time()
-            # run query on bn
+            bayes_net.marginal_distribution(set(Q), e, args.heuristics)
             finish_time = time()
-            stats['bare_net'][size].append(finish_time - start_time)
 
-        # consider iteration over each baesian network for new query
+            bayes_net.prune(Q, e) 
 
-        bayes_net.prune(**query) # q_ratio = 30%, e_ratio = 20% [smaller precentage -> more prunning]
-        # collect stats about prunned nodes and edges
-        # motivation: we leave Q and e the same for prunned network
+            node_amt_prunned = bayes_net.bn.get_num_nodes()
+            edges_amt_prunned= bayes_net.bn.get_num_edges()
 
-        for iter in range(args.iter):
-            start_time = time()
-            # run query on bn
-            finish_time = time()
-            stats['prunned_net'][size].append(finish_time - start_time)
+            start_time_prunned = time()
+            bayes_net.marginal_distribution(Q, e)
+            finish_time_prunned = time()
 
-    # save stats as pd DataFrame to output folder
+            stats.append({
+                'size': size_folder,
+                'filename': net_file,
+                'node_amt': node_amt,
+                'edges_amt': edges_amt,
+                'start_time': start_time,
+                'finish_time': finish_time,
+                'node_amt_prunned': node_amt_prunned,
+                'edges_amt_prunned': edges_amt_prunned,
+                'start_time_prunned': start_time_prunned,
+                'finish_time_prunned': finish_time_prunned,
+            })
 
+    print('Saving results.')
+    pd.DataFrame(stats).to_excel(args.output)
