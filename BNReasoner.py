@@ -107,8 +107,9 @@ class BNReasoner:
         """
 
         # Compute the CPT with the maximum probabilty when X is maxed-out 
-        variables_left = [variable for variable in cpt.columns if variable != X and variable != 'p']
+        variables_left = [variable for variable in cpt.columns if variable != X and variable != 'p' and "extended factor" not in variable]
 
+        print(len(variables_left))
         if len(variables_left) == 0:
             p = cpt["p"].max()
             new_cpt = pd.DataFrame({"T": ["T"], "p": [p]})
@@ -124,7 +125,7 @@ class BNReasoner:
         extended_factor = pd.merge(cpt, new_cpt, on=["p"], how="inner").rename(columns= {X: "extended factor " + X})[f'extended factor {X}']
         
         if previous_factors:
-            return new_cpt.assign(**dict(cpt[previous_factors]), **{f'extended factor {X}': extended_factor}) 
+            return new_cpt.assign(**dict(cpt[previous_factors]), **{f'extended factor {X}': extended_factor})
         else:
             return new_cpt.assign(**{f"extended factor {X}": extended_factor})
 
@@ -328,7 +329,7 @@ class BNReasoner:
         in the Bayesian network X with Q ⊂ X but can also be Q = X. 
         """
 
-   def marginal_distribution_brutto(self, Q: Set[str], e: pd.Series) -> pd.DataFrame:
+    def marginal_distribution_brutto(self, Q: Set[str], e: pd.Series) -> pd.DataFrame:
         """
         Given query variables Q and possibly empty evidence e, compute the marginal distribution P(Q|e). 
         Note that Q is a subset of the variables 
@@ -378,11 +379,12 @@ class BNReasoner:
         This function calculates the maximum a-posteriori instantiation and query variables
         given some (possible empty) evidence
         """
-        cpt = self.marginal_distribution(Q, e)
-        max = cpt["p"].max()
-        map = cpt.loc[cpt['p'] == max]
+        cpt = self.marginal_distribution_brutto(Q, e)
 
-        return map
+        for var in list(Q):
+            cpt = self.maxing_out(var, cpt)
+
+        return cpt
 
     def MPE(self, Q, e):
         """
