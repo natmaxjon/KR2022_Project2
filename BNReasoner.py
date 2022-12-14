@@ -370,8 +370,6 @@ class BNReasoner:
         p_Q_e['p'] = p_Q_e['p'].apply(lambda x: x/p_e)
 
         return p_Q_e
-
-        return p_Q_e 
     
     def MAP(self, Q:Set[str], e:pd.Series):
         """
