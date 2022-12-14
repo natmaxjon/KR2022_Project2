@@ -136,10 +136,11 @@ class BNReasoner:
         cpt2_variables = list(cpt2.columns)
         common_variables = [variable for variable in cpt1_variables if variable in cpt2_variables and variable != 'p']
 
-        if not common_variables:
-            return 'ERROR: no common variables in CPTs, no multiplication possible'
+        if len(common_variables) == 0:
+            cpt_combined = cpt1.merge(cpt2, suffixes=('_1', '_2'), how='cross')
+        else:
+            cpt_combined = cpt1.merge(cpt2, left_on=common_variables ,right_on=common_variables, suffixes=('_1', '_2'))
 
-        cpt_combined = cpt1.merge(cpt2, left_on=common_variables ,right_on=common_variables, suffixes=('_1', '_2'))
         cpt_combined['p'] = cpt_combined['p_1'] * cpt_combined['p_2']
         cpt_combined = cpt_combined.drop(['p_1','p_2'], axis=1)
 
