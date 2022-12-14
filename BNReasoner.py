@@ -92,6 +92,10 @@ class BNReasoner:
 
         variables_left = [variable for variable in cpt.columns if variable != X and variable != 'p']
 
+        if len(variables_left) == 0:
+            p = cpt["p"].sum()
+            return pd.DataFrame({"T": ["T"], "p": p})
+    
         # Take the sum of the factors
         new_cpt  = pd.DataFrame(cpt.groupby(variables_left, as_index=False).agg({'p': 'sum'}))
         
@@ -104,8 +108,14 @@ class BNReasoner:
 
         # Compute the CPT with the maximum probabilty when X is maxed-out 
         variables_left = [variable for variable in cpt.columns if variable != X and variable != 'p']
-        new_cpt = pd.DataFrame(cpt.groupby(variables_left).agg({"p": "max"}))
-        new_cpt.reset_index(inplace=True)
+
+        if len(variables_left) == 0:
+            p = cpt["p"].max()
+            new_cpt = pd.DataFrame({"T": ["T"], "p": [p]})
+
+        else:
+            new_cpt = pd.DataFrame(cpt.groupby(variables_left).agg({"p": "max"}))
+            new_cpt.reset_index(inplace=True)
         
         # Check if there are any previous factors in the table 
         previous_factors = [column for column in cpt.columns.tolist() if "extended factor" in column]
@@ -269,7 +279,6 @@ class BNReasoner:
         for var, cpt in cpts.items():
             upd_cpt = self.bn.get_compatible_instantiations_table(e, cpt)
             upd_cpts[var] = upd_cpt
-        # pprint(upd_cpts)
 
         # get all the variables that are not in Q or e
         X = set(self.bn.get_all_variables()) - Q - set(e.keys())
@@ -280,14 +289,21 @@ class BNReasoner:
         # get joint probability Q and e - P(Q, e)
         p_Q_e = pd.DataFrame()
         visited = []
+        #print(order)
         for var in order:
+            #print(var)
             for child in self.bn.get_children(var):
+                #print(child)
                 if child not in visited:
+                    #print("no child")
                     if p_Q_e.size == 0:
+                        #print("size 0")
                         p_Q_e = self.factor_multiplication(upd_cpts[var], upd_cpts[child])
                         visited.extend([var, child])
                     else:
+                        #print("size not 0")
                         p_Q_e = self.factor_multiplication(p_Q_e, upd_cpts[child])
+                        #print(p_Q_e)
                         visited.append(child)
 
             p_Q_e = self.marginalization(var, p_Q_e)
@@ -295,7 +311,9 @@ class BNReasoner:
         # compute probability of e
         p_e = p_Q_e.copy()
         for var in Q:
+            #print(f'before {p_e}')
             p_e = self.marginalization(var, p_e)
+            #print(p_e)
         p_e = p_e['p'][0]
 
         # divide joint probability on probability of evidence
@@ -345,9 +363,26 @@ class BNReasoner:
         # divide joint probability on probability of evidence
         p_Q_e['p'] = p_Q_e['p'].apply(lambda x: x/p_e['p'][0])
 
-        return p_Q_e
+        return p_Q_e 
+    
+    def MAP(self, Q:Set[str], e:pd.Series):
+        """
+        This function calculates the maximum a-posteriori instantiation and query variables
+        given some (possible empty) evidence
+        """
+        cpt = self.marginal_distribution(Q, e)
+        max = cpt["p"].max()
+        map = cpt.loc[cpt['p'] == max]
 
+        return map
 
+    def MPE(self, Q, e):
+        """
+        This function calculates the most probable explanation given an evidence
+        """
+        
+        return self.MAP(Q, e)
+    
 if __name__ == "__main__":
     bayes = BNReasoner('testing/stroke_network.BIFXML')
     
