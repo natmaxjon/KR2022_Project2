@@ -298,7 +298,7 @@ class BNReasoner:
         p_e = p_e['p'][0]
 
         # divide joint probability on probability of evidence
-        p_Q_e['p'] = p_Q_e['p'].apply(lambda x: x/p_e['p'][0])
+        p_Q_e['p'] = p_Q_e['p'].apply(lambda x: x/p_e)
 
         return p_Q_e
 
