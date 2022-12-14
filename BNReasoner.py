@@ -107,8 +107,9 @@ class BNReasoner:
         """
 
         # Compute the CPT with the maximum probabilty when X is maxed-out 
-        variables_left = [variable for variable in cpt.columns if variable != X and variable != 'p']
+        variables_left = [variable for variable in cpt.columns if variable != X and variable != 'p' and "extended factor" not in variable]
 
+        print(len(variables_left))
         if len(variables_left) == 0:
             p = cpt["p"].max()
             new_cpt = pd.DataFrame({"T": ["T"], "p": [p]})
@@ -124,7 +125,7 @@ class BNReasoner:
         extended_factor = pd.merge(cpt, new_cpt, on=["p"], how="inner").rename(columns= {X: "extended factor " + X})[f'extended factor {X}']
         
         if previous_factors:
-            return new_cpt.assign(**dict(cpt[previous_factors]), **{f'extended factor {X}': extended_factor}) 
+            return new_cpt.assign(**dict(cpt[previous_factors]), **{f'extended factor {X}': extended_factor})
         else:
             return new_cpt.assign(**{f"extended factor {X}": extended_factor})
 
@@ -263,15 +264,12 @@ class BNReasoner:
                 new_cpt = self.marginalization(node, cpt)
         
         return new_cpt
-
-
-    def marginal_distribution(self, Q: Set[str], e: pd.Series, heuristic='min_deg') -> pd.DataFrame:
+    
+    def joint_distribution(self, Q: Set[str], e: pd.Series, heuristic=None) -> pd.DataFrame:
         """
-        Given query variables Q and possibly empty evidence e, compute the marginal distribution P(Q|e). 
-        Note that Q is a subset of the variables 
-        in the Bayesian network X with Q ⊂ X but can also be Q = X. 
+        Given set of query variables Q and possibly empty evidence e, compute the joint distribution P(Q, e). 
+        Note that Q is a subset of the variables in the Bayesian network X with Q ⊂ X but can also be Q = X. 
         """
-
         cpts = self.bn.get_all_cpts()
 
         # reduce all factors w.r.t. e
@@ -279,83 +277,52 @@ class BNReasoner:
         for var, cpt in cpts.items():
             upd_cpt = self.bn.get_compatible_instantiations_table(e, cpt)
             upd_cpts[var] = upd_cpt
-
-        # get all the variables that are not in Q or e
-        X = set(self.bn.get_all_variables()) - set(Q) - set(e.keys())
-
-        # get order of variables summation
-        order = self.elimination_order(X, heuristic=heuristic)
-
-        # get joint probability Q and e - P(Q, e)
-        p_Q_e = pd.DataFrame()
-        visited = []
-        #print(order)
-        for var in order:
-            #print(var)
-            for child in self.bn.get_children(var):
-                #print(child)
-                if child not in visited:
-                    #print("no child")
-                    if p_Q_e.size == 0:
-                        #print("size 0")
-                        p_Q_e = self.factor_multiplication(upd_cpts[var], upd_cpts[child])
-                        visited.extend([var, child])
-                    else:
-                        #print("size not 0")
-                        p_Q_e = self.factor_multiplication(p_Q_e, upd_cpts[child])
-                        #print(p_Q_e)
-                        visited.append(child)
-
-            p_Q_e = self.marginalization(var, p_Q_e)
-
-        # compute probability of e
-        p_e = p_Q_e.copy()
-        for var in Q:
-            #print(f'before {p_e}')
-            p_e = self.marginalization(var, p_e)
-            #print(p_e)
-        p_e = p_e['p'][0]
-
-        # divide joint probability on probability of evidence
-        p_Q_e['p'] = p_Q_e['p'].apply(lambda x: x/p_e)
-
-        return p_Q_e
-
-    def marginal_distribution_brutto(self, Q: Set[str], e: pd.Series) -> pd.DataFrame:
-        """
-        Given query variables Q and possibly empty evidence e, compute the marginal distribution P(Q|e). 
-        Note that Q is a subset of the variables 
-        in the Bayesian network X with Q ⊂ X but can also be Q = X. 
-        """
-
-    def marginal_distribution_brutto(self, Q: Set[str], e: pd.Series) -> pd.DataFrame:
-        """
-        Given query variables Q and possibly empty evidence e, compute the marginal distribution P(Q|e). 
-        Note that Q is a subset of the variables 
-        in the Bayesian network X with Q ⊂ X but can also be Q = X. 
-        """
-
-        cpts = self.bn.get_all_cpts()
-
-        # reduce all factors w.r.t. e
-        upd_cpts = {}
-        for var, cpt in cpts.items():
-            upd_cpt = self.bn.get_compatible_instantiations_table(e, cpt)
-            upd_cpts[var] = upd_cpt
-
-        # calculate probability of Q and e
-        p_Q_and_e = None
-        for var in upd_cpts:
-            if p_Q_and_e is None:
-                p_Q_and_e = upd_cpts[var]
-            else:
-                p_Q_and_e = self.factor_multiplication(p_Q_and_e, upd_cpts[var])
 
         # variables not in Q and e
         X = set(self.bn.get_all_variables()) - Q - set(e.keys())
-        order = self.elimination_order(X, heuristic='min_deg')
-        for node in order:
-            p_Q_and_e = self.marginalization(node, p_Q_and_e)
+        order = self.elimination_order(X, heuristic=heuristic)
+
+        if heuristic is None:
+            p_Q_and_e = pd.DataFrame()
+            for var in upd_cpts:
+                if p_Q_and_e.empty:
+                    p_Q_and_e = upd_cpts[var]
+                else:
+                    p_Q_and_e = self.factor_multiplication(p_Q_and_e, upd_cpts[var])
+        
+            for node in order:
+                p_Q_and_e = self.marginalization(node, p_Q_and_e)
+        else:
+            visited = []
+            p_Q_and_e = pd.DataFrame()
+            for var in order:
+                if p_Q_and_e.empty:
+                    p_Q_and_e = upd_cpts[var]
+                else:
+                    p_Q_and_e = self.factor_multiplication(p_Q_and_e, upd_cpts[var])
+
+                visited.append(var)
+                for child in self.bn.get_children(var):
+                    if child not in visited:
+                        p_Q_and_e = self.factor_multiplication(p_Q_and_e, upd_cpts[child])
+                        visited.append(child)
+
+                if var in X:
+                    p_Q_and_e = self.marginalization(var, p_Q_and_e)
+            
+            for var in Q:
+                if var not in visited:
+                    p_Q_and_e = self.factor_multiplication(p_Q_and_e, upd_cpts[var])
+        
+        return p_Q_and_e
+
+    def marginal_distribution(self, Q: Set[str], e: pd.Series, heuristic=None) -> pd.DataFrame:
+        """
+        Given query variables Q and possibly empty evidence e, compute the marginal distribution P(Q|e). 
+        Note that Q is a subset of the variables 
+        in the Bayesian network X with Q ⊂ X but can also be Q = X. 
+        """
+        p_Q_and_e = self.joint_distribution(Q, e, heuristic=heuristic) 
 
         # compute probability of e
         p_e = p_Q_and_e.copy()
@@ -363,11 +330,12 @@ class BNReasoner:
             p_e = self.marginalization(var, p_e)
         p_e = p_e['p'][0]
 
-        # divide joint probability on probability of evidence
+        # remove e from resulting cpt
         p_Q_e = p_Q_and_e.drop(axis=1, labels=list(e.index))
-        
-        # normalise probabilities
+
+        # divide joint probability on probability of evidence
         p_Q_e['p'] = p_Q_e['p'].apply(lambda x: x/p_e)
+        p_Q_e.reset_index(drop=True, inplace=True)
 
         return p_Q_e
     
@@ -376,15 +344,11 @@ class BNReasoner:
         This function calculates the maximum a-posteriori instantiation and query variables
         given some (possible empty) evidence
         """
-        cpt = self.marginal_distribution(Q, e)
-        print(cpt)
-        print("max out:", Q[0])
-        cpt = self.maxing_out(Q[0], cpt)
-        # for var in Q:
-        #     cpt = self.maxing_out(var, cpt)
+        # cpt = self.marginal_distribution_brutto(Q, e)
+        cpt = self.joint_distribution(Q, e)
 
-        # max = cpt["p"].max()
-        # map = cpt.loc[cpt['p'] == max]
+        for var in list(Q):
+            cpt = self.maxing_out(var, cpt)
 
         return cpt
 
@@ -396,5 +360,10 @@ class BNReasoner:
         return self.MAP(Q, e)
     
 if __name__ == "__main__":
-    bayes = BNReasoner('testing/stroke_network.BIFXML')
+    bayes = BNReasoner('testing/lecture_example2.BIFXML')
+    Q = set(["I", "J"])
+    # e = pd.Series({"O": True})
+    e = pd.Series()
+
+    print(bayes.marginal_distribution(Q, e, 'min_deg'))
     
