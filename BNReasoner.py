@@ -153,7 +153,7 @@ class BNReasoner:
         order = []
         while len(degrees):
             node = degrees[0][0]
-            print(node)
+            # print(node)
 
             # connect neighbours with each other
             neighbours = list(graph.neighbors(node)) # get all the neighbours of the node, participating in order
