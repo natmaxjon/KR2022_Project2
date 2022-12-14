@@ -328,7 +328,7 @@ class BNReasoner:
         in the Bayesian network X with Q ⊂ X but can also be Q = X. 
         """
 
-   def marginal_distribution_brutto(self, Q: Set[str], e: pd.Series) -> pd.DataFrame:
+    def marginal_distribution_brutto(self, Q: Set[str], e: pd.Series) -> pd.DataFrame:
         """
         Given query variables Q and possibly empty evidence e, compute the marginal distribution P(Q|e). 
         Note that Q is a subset of the variables 
