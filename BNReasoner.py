@@ -93,7 +93,6 @@ class BNReasoner:
         variables_left = [variable for variable in cpt.columns if variable != X and variable != 'p']
 
         if len(variables_left) == 0:
-            print(cpt)
             p = cpt["p"].sum()
             return pd.DataFrame({"T": ["T"], "p": p})
     
@@ -289,21 +288,21 @@ class BNReasoner:
         # get joint probability Q and e - P(Q, e)
         p_Q_e = pd.DataFrame()
         visited = []
-        print(order)
+        #print(order)
         for var in order:
-            print(var)
+            #print(var)
             for child in self.bn.get_children(var):
-                print(child)
+                #print(child)
                 if child not in visited:
-                    print("no child")
+                    #print("no child")
                     if p_Q_e.size == 0:
-                        print("size 0")
+                        #print("size 0")
                         p_Q_e = self.factor_multiplication(upd_cpts[var], upd_cpts[child])
                         visited.extend([var, child])
                     else:
-                        print("size not 0")
+                        #print("size not 0")
                         p_Q_e = self.factor_multiplication(p_Q_e, upd_cpts[child])
-                        print(p_Q_e)
+                        #print(p_Q_e)
                         visited.append(child)
 
             p_Q_e = self.marginalization(var, p_Q_e)
@@ -311,9 +310,9 @@ class BNReasoner:
         # compute probability of e
         p_e = p_Q_e.copy()
         for var in Q:
-            print(f'before {p_e}')
+            #print(f'before {p_e}')
             p_e = self.marginalization(var, p_e)
-            print(p_e)
+            #print(p_e)
         p_e = p_e['p'][0]
 
         # divide joint probability on probability of evidence
@@ -363,9 +362,26 @@ class BNReasoner:
         # divide joint probability on probability of evidence
         p_Q_e['p'] = p_Q_e['p'].apply(lambda x: x/p_e['p'][0])
 
-        return p_Q_e
+        return p_Q_e 
+    
+    def MAP(self, Q:Set[str], e:pd.Series):
+        """
+        This function calculates the maximum a-posteriori instantiation and query variables
+        given some (possible empty) evidence
+        """
+        cpt = self.marginal_distribution(Q, e)
+        max = cpt["p"].max()
+        map = cpt.loc[cpt['p'] == max]
 
+        return map
 
+    def MPE(self, Q, e):
+        """
+        This function calculates the most probable explanation given an evidence
+        """
+        
+        return self.MAP(Q, e)
+    
 if __name__ == "__main__":
     bayes = BNReasoner('testing/stroke_network.BIFXML')
     
