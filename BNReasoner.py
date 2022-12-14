@@ -1,5 +1,5 @@
 from itertools import combinations, product
-from typing import Union, List, List
+from typing import Union, List, Set
 import pandas as pd
 
 from BayesNet import BayesNet
@@ -153,7 +153,7 @@ class BNReasoner:
         order = []
         while len(degrees):
             node = degrees[0][0]
-            print(node)
+            # print(node)
 
             # connect neighbours with each other
             neighbours = list(graph.neighbors(node)) # get all the neighbours of the node, participating in order
@@ -191,7 +191,7 @@ class BNReasoner:
         
         return amount
 
-    def min_fill_ordering(self, X):
+    def min_fill_ordering(self, X: Set[str]):
         """Given a set of variables X in the Bayesian network, 
         compute a good ordering for the elimination of X based on the min-fill heuristics.
         """
@@ -228,7 +228,7 @@ class BNReasoner:
         
         return order
 
-    def elimination_order(self, X, heuristic=None):
+    def elimination_order(self, X: Set[str], heuristic=None):
         if heuristic is None:
             order = list(X)
         elif heuristic == 'min_deg':
@@ -240,7 +240,7 @@ class BNReasoner:
 
         return order
 
-    def variable_elimination(self, cpt, X, heuristic=None):
+    def variable_elimination(self, cpt: pd.DataFrame, X: Set[str], heuristic=None):
         """
         Sum out a set of variables by using variable elimination. 
         """
@@ -254,7 +254,7 @@ class BNReasoner:
         return new_cpt
 
 
-    def marginal_distribution(self, Q, e, heuristic='min_deg'):
+    def marginal_distribution(self, Q: Set[str], e: pd.Series, heuristic='min_deg') -> pd.DataFrame:
         """
         Given query variables Q and possibly empty evidence e, compute the marginal distribution P(Q|e). 
         Note that Q is a subset of the variables 
@@ -298,11 +298,11 @@ class BNReasoner:
         p_e = p_e['p'][0]
 
         # divide joint probability on probability of evidence
-        p_Q_e['p'] = p_Q_e['p'].apply(lambda x: x/p_e['p'][0])
+        p_Q_e['p'] = p_Q_e['p'].apply(lambda x: x/p_e)
 
         return p_Q_e
 
-    def marginal_distribution_brutto(self, Q, e):
+    def marginal_distribution_brutto(self, Q: Set[str], e: pd.Series) -> pd.DataFrame:
         """
         Given query variables Q and possibly empty evidence e, compute the marginal distribution P(Q|e). 
         Note that Q is a subset of the variables 
