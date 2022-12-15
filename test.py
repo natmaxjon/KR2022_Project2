@@ -13,7 +13,11 @@ def bn1():
 # Lecture example 1 (given)
 @pytest.fixture
 def bn2():
-    return BNReasoner("./testing/lecture_example.BIFXML")
+    bn = BayesNet()
+    bn.load_from_bifxml("./testing/lecture_example.BIFXML")
+
+    return BNReasoner(bn)
+
 
 # Lecture example 2 (given)
 @pytest.fixture
@@ -48,6 +52,14 @@ class TestDSeparation:
         Y = ['S']
         Z = ['C', 'D']
         assert not bn4.is_dsep(X, Y, Z)
+
+    def test_case3(self, bn2):
+
+        X = ["Winter?"]
+        Y = ["Slippery Road?"]
+        Z = ["Rain?"]
+
+        assert bn2.is_dsep(X, Y, Z)
 
 class TestMarginalisation:
 
@@ -96,7 +108,28 @@ class TestFactorMultiplication:
         print(expected)
         assert multiplication.equals(expected)
 
+class TestMAP:
 
+    def testcase1(self, bn2):
+
+        Q = {"Slippery Road?"}
+        e = pd.Series({"Winter?": True})
+
+        map = bn2.MAP(Q, e)
+        map_real = pd.DataFrame({"Winter?": [True], "p": [0.336], "extended factor Slippery Road?": [True]})
+        
+        assert map.equals(map_real)
+
+class TestMPE:
+
+    def testcase1(self, bn2):
+
+        Q = {"Slippery Road?", "Sprinkler?", "Wet Grass?", "Rain?"}
+        e = pd.Series({"Winter?": True})
+
+        mpe = bn2.MPE(Q, e)
+      
+        assert not  mpe["p"].squeeze() == 0.21504
 
 
         
