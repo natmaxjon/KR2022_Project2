@@ -1,10 +1,20 @@
 import pytest
 import pandas as pd
+from pandas.testing import assert_frame_equal
 
 from BayesNet import BayesNet
 from BNReasoner import BNReasoner
 
-# --------------------------------- Test BNs ----------------------------------
+# ---------------------------- Helper Functions ----------------------------- #
+
+def frames_are_equal(df1, df2):
+    try:
+        assert_frame_equal(df1, df2)
+        return True
+    except:
+        return False
+
+# --------------------------------- Test BNs -------------------------------- #
 # Dog problem (given)
 @pytest.fixture
 def bn1():
@@ -101,12 +111,9 @@ class TestFactorMultiplication:
         test_cpt2 = all_cpt["Rain?"]
 
         multiplication = bn2.factor_multiplication(test_cpt1, test_cpt2)
-        expected = pd.DataFrame({"Winter?": [False, False, True, True], "Rain?": [False, True, False, True], "p": [0.36, 0.04, 0.12, 0.48]})
+        expected = pd.DataFrame({'Winter?': [False, False, True, True], 'Rain?': [False, True, False, True], 'p': [0.36, 0.04, 0.12, 0.48]})
 
-        print(multiplication)
-        
-        print(expected)
-        assert multiplication.equals(expected)
+        assert frames_are_equal(expected, multiplication)
 
 class TestMAP:
 
