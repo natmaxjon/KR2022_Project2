@@ -46,7 +46,7 @@ if __name__ == '__main__':
             Q, e = bayes_net.bn.rand_Qe(q_ratio=args.q_ratio, e_ratio=args.e_ratio)
 
             tic = perf_counter()
-            bayes_net.marginal_distribution_brutto(set(Q), e)
+            bayes_net.marginal_distribution(set(Q), e)
             toc = perf_counter()
             time_before_prune = toc - tic
 
@@ -56,7 +56,7 @@ if __name__ == '__main__':
             num_edges_pruned= bayes_net.bn.get_num_edges()
 
             tic = perf_counter()
-            bayes_net.marginal_distribution_brutto(set(Q), e)
+            bayes_net.marginal_distribution(set(Q), e)
             toc = perf_counter()
             time_after_prune = toc - tic
 
