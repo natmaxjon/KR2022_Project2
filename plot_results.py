@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     # Preprocessing
     stats = pd.read_csv(args.input)
-    stats = stats.sort_values(by=['size']).head(140)
+    stats = stats.sort_values(by=['size'])
     stats['perc_nodes_pruned'] = stats.apply(lambda x: perc_change(x['nodes_before_prune'], x['nodes_after_prune']), axis=1)
     stats['perc_edges_pruned'] = stats.apply(lambda x: perc_change(x['edges_before_prune'], x['edges_after_prune']), axis=1)
 
