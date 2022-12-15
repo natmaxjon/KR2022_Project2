@@ -249,7 +249,7 @@ class BayesNet:
 
     def get_all_edges(self) -> List[Tuple[str, str]]:
         """
-        :return: A list of nodes in the network
+        :return: A list of edges in the network
         """
         return list(self.structure.edges())
 
