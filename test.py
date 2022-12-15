@@ -15,12 +15,12 @@ def frames_are_equal(df1, df2):
         return False
 
 # --------------------------------- Test BNs -------------------------------- #
-# Dog problem (given)
+# Dog problem
 @pytest.fixture
 def bn1():
     return BNReasoner("./testing/dog_problem.BIFXML")
 
-# Lecture example 1 (given)
+# Lecture example 1 (Winter?, Sprinkler? ... Slippery Road?)
 @pytest.fixture
 def bn2():
     bn = BayesNet()
@@ -28,8 +28,7 @@ def bn2():
 
     return BNReasoner(bn)
 
-
-# Lecture example 2 (given)
+# Lecture example 2 (I, J, X, Y, O)
 @pytest.fixture
 def bn3():
     return BNReasoner("./testing/lecture_example2.BIFXML")
@@ -49,6 +48,27 @@ def bn4():
     return BNReasoner(bn)
 
 # ----------------------------------- Tests -----------------------------------
+
+class TestPruning:
+    def test_case1(self, bn2):
+        Q = ['Wet Grass?']
+        e = pd.Series({'Winter?': True, 'Rain?': False})
+
+        bn2.prune(Q, e)
+
+        expected_nodes = ['Winter?', 'Sprinkler?', 'Rain?', 'Wet Grass?']
+        expected_edges = [('Sprinkler?', 'Wet Grass?')]
+        cpt_winter = pd.DataFrame({'Winter?': [False, True], 'p': [0.4, 0.6]})
+        cpt_sprinkler = pd.DataFrame({'Sprinkler?': [False, True], 'p': [0.8, 0.2]})
+        cpt_rain = pd.DataFrame({'Rain?': [False, True], 'p': [0.2, 0.8]})
+        cpt_wetgrass = pd.DataFrame({'Sprinkler?': [False, False, True, True], 'Wet Grass?': [False, True, False, True], 'p': [1, 0, 0.1, 0.9]})
+
+        assert expected_nodes == bn2.bn.get_all_nodes()
+        assert expected_edges == bn2.bn.get_all_edges()
+        assert frames_are_equal(cpt_winter, bn2.bn.get_cpt('Winter?'))
+        assert frames_are_equal(cpt_sprinkler, bn2.bn.get_cpt('Sprinkler?'))
+        assert frames_are_equal(cpt_rain, bn2.bn.get_cpt('Rain?'))
+        assert frames_are_equal(cpt_wetgrass, bn2.bn.get_cpt('Wet Grass?'))
 
 class TestDSeparation:
     def test_case1(self, bn4):

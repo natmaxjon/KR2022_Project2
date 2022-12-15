@@ -240,7 +240,18 @@ class BayesNet:
         :return: An integer for the number of edges in the network
         """
         return self.structure.number_of_edges()
+    
+    def get_all_nodes(self) -> List[str]:
+        """
+        :return: A list of nodes in the network
+        """
+        return list(self.structure.nodes())
 
+    def get_all_edges(self) -> List[Tuple[str, str]]:
+        """
+        :return: A list of nodes in the network
+        """
+        return list(self.structure.edges())
 
     def is_leaf_node(self, node: str) -> bool:
         """
