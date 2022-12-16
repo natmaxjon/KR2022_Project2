@@ -178,7 +178,7 @@ class TestMarginalDistribution:
         Q = set(['I', 'J'])
         e = pd.Series({'O': True})
 
-        result = bayes.marginal_distribution(Q, e)
+        result = bayes.marginal_distribution(Q, e).round(6)
         expected = pd.DataFrame({
             'I': [False, False, True, True], 
             'J': [False, True, False, True], 
@@ -229,6 +229,6 @@ class TestMPE:
         Q = {"Slippery Road?", "Sprinkler?", "Wet Grass?", "Rain?"}
         e = pd.Series({"Winter?": True})
 
-        mpe = bn2.MPE(Q, e)
+        mpe = bn2.MPE(Q, e).round(5)
       
-        assert not  mpe["p"].squeeze() == 0.21504
+        assert mpe["p"].squeeze() == 0.21504

@@ -109,7 +109,7 @@ class BNReasoner:
         # Compute the CPT with the maximum probabilty when X is maxed-out 
         variables_left = [variable for variable in cpt.columns if variable != X and variable != 'p' and "extended factor" not in variable]
 
-        print(len(variables_left))
+        # print(len(variables_left))
         if len(variables_left) == 0:
             p = cpt["p"].max()
             new_cpt = pd.DataFrame({"T": ["T"], "p": [p]})
