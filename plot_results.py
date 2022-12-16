@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     # Preprocessing
     stats = pd.read_csv(args.input)
-    stats = stats.sort_values(by=['size'])
+    stats = stats.sort_values(by=['size'])#.head(140) # Uncomment to restrict plot to sizes in range [3, 16]
     stats['perc_nodes_pruned'] = stats.apply(lambda x: perc_change(x['nodes_before_prune'], x['nodes_after_prune']), axis=1)
     stats['perc_edges_pruned'] = stats.apply(lambda x: perc_change(x['edges_before_prune'], x['edges_after_prune']), axis=1)
 
@@ -107,6 +107,8 @@ if __name__ == '__main__':
     ax2.tick_params(axis='x', labelsize=tick_label_size)
     ax2.tick_params(axis='y', labelsize=tick_label_size)
     ax2.grid()
+
+    fig.set_size_inches(6, 7)
 
     # Use the window to manually adjust aspect ratios. The adjusted figure will
     # be saved once it is closed
