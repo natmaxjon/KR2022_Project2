@@ -160,7 +160,7 @@ class BNReasoner:
         for node, _ in graph.degree:
             if node not in X:
                 del degrees[node]
-        degrees = sorted(degrees.items(), key=lambda item: item[1])
+        degrees = sorted(degrees.items(), key=lambda item: (item[1], item[0]))
 
         order = []
         while len(degrees):
@@ -185,7 +185,7 @@ class BNReasoner:
             for node, _ in graph.degree:
                 if node not in X:
                     del degrees[node]
-            degrees = sorted(degrees.items(), key=lambda item: item[1])
+            degrees = sorted(degrees.items(), key=lambda item: (item[1], item[0]))
 
         return order
 
@@ -212,7 +212,7 @@ class BNReasoner:
         amounts = dict()
         for node in X:
             amounts[node] = self.calculate_additional_edges(graph, node)
-        amounts = sorted(amounts.items(), key=lambda item: item[1])
+        amounts = sorted(amounts.items(), key=lambda item: (item[1], item[0]))
 
         order = []
         while len(amounts):
@@ -236,7 +236,7 @@ class BNReasoner:
             amounts = dict()
             for node in (X - set(order)):
                 amounts[node] = self.calculate_additional_edges(graph, node)
-            amounts = sorted(amounts.items(), key=lambda item: item[1])
+            amounts = sorted(amounts.items(), key=lambda item: (item[1], item[0]))
         
         return order
 
