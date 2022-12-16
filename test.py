@@ -71,6 +71,7 @@ class TestDSeparation:
 
         assert bn2.is_dsep(X, Y, Z)
 
+
 class TestMarginalisation:
 
     def test_case1(self, bn2):
@@ -85,7 +86,8 @@ class TestMarginalisation:
         expected_outcome = pd.DataFrame({"Sprinkler?": [False, True], "p": [1.05, 0.95]})
    
         assert outcome.equals(expected_outcome)
-        
+
+
 class TestMaxingOut:
     
     def testcase1(self, bn2):
@@ -101,6 +103,7 @@ class TestMaxingOut:
 
         assert cpt.equals(expected_cpt)
 
+
 class TestFactorMultiplication:
 
     def testcase1(self, bn2):
@@ -115,6 +118,77 @@ class TestFactorMultiplication:
 
         assert frames_are_equal(expected, multiplication)
 
+
+class TestVarElimination:
+
+    def testcase1(self, bn4):
+        cpt = pd.DataFrame({
+            'I': [False, False, True, True], 
+            'J': [False, True, False, True], 
+            'p': [0.25, 0.25, 0.25, 0.25]
+        })
+        result = bn4.variable_elimination(cpt, set(['I']))
+
+        bayes = BNReasoner('testing/lecture_example2.BIFXML')
+        expected = bayes.bn.get_all_cpts()['J']
+
+        assert frames_are_equal(result, expected)
+
+
+class TestOrdering:
+
+    def testcase_mindeg(self):
+        bayes = BNReasoner('testing/lecture_example2.BIFXML')
+        order = bayes.min_degree_ordering(bayes.bn.get_all_variables())
+
+        assert order == ['I', 'J', 'O', 'X', 'Y']
+
+    def testcase_minfill(self):
+        bayes = BNReasoner('testing/lecture_example2.BIFXML')
+        order = bayes.min_degree_ordering(bayes.bn.get_all_variables())
+        print(order)
+        assert order == ['I', 'J', 'O', 'X', 'Y']
+
+
+class TestMarginalDistribution:
+
+    def testcase1(self):
+        bayes = BNReasoner('testing/lecture_example2.BIFXML')
+
+        Q = set(['I', 'J'])
+        e = pd.Series({'O': True})
+
+        result = bayes.marginal_distribution(Q, e)
+        expected = pd.DataFrame({
+            'I': [False, False, True, True], 
+            'J': [False, True, False, True], 
+            'p': [0.32896, 0.02613, 0.32896, 0.315949]
+        })
+
+        print(result)
+        print(expected)
+
+        assert frames_are_equal(result, expected)
+
+    def testcase2(self):
+        bayes = BNReasoner('testing/lecture_example2.BIFXML')
+
+        Q = set(['I', 'J'])
+        e = pd.Series({})
+
+        result = bayes.marginal_distribution(Q, e)
+        expected = pd.DataFrame({
+            'I': [False, False, True, True], 
+            'J': [False, True, False, True], 
+            'p': [0.25, 0.25, 0.25, 0.25]
+        })
+
+        print(result)
+        print(expected)
+
+        assert frames_are_equal(result, expected)
+
+
 class TestMAP:
 
     def testcase1(self, bn2):
@@ -127,6 +201,7 @@ class TestMAP:
         
         assert map.equals(map_real)
 
+
 class TestMPE:
 
     def testcase1(self, bn2):
@@ -137,7 +212,3 @@ class TestMPE:
         mpe = bn2.MPE(Q, e)
       
         assert not  mpe["p"].squeeze() == 0.21504
-
-
-        
-
